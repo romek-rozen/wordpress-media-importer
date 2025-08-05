@@ -10,10 +10,10 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-define( 'EID_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
+define( 'EMI_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 
 // Include the admin class.
-require_once EID_PLUGIN_PATH . 'admin/class-eid-admin.php';
+require_once EMI_PLUGIN_PATH . 'admin/class-emi-admin.php';
 
 // Initialize the admin class.
-new EID_Admin();
+new EMI_Admin();

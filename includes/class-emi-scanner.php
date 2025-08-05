@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-class EID_Scanner {
+class EMI_Scanner {
 
     public static function find_external_media( $post_types, $extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'], $post_statuses = ['publish'], &$debug_info = [] ) {
         $found_media = [];

@@ -1,9 +1,9 @@
 jQuery(document).ready(function($) {
-    $('#eid-scan-form').on('submit', function(e) {
+    $('#emi-scan-form').on('submit', function(e) {
         e.preventDefault();
 
-        var scanButton = $('#eid-scan-button');
-        var resultsContainer = $('#eid-scan-results');
+        var scanButton = $('#emi-scan-button');
+        var resultsContainer = $('#emi-scan-results');
         var formData = $(this).serialize();
 
         scanButton.prop('disabled', true).text('Scanning...');
@@ -13,8 +13,8 @@ jQuery(document).ready(function($) {
             url: ajaxurl, // ajaxurl is a global variable in WordPress admin
             type: 'POST',
             data: {
-                action: 'eid_scan_content',
-                nonce: eid_ajax.nonce,
+                action: 'emi_scan_content',
+                nonce: emi_ajax.nonce,
                 form_data: formData
             },
             success: function(response) {
@@ -46,13 +46,13 @@ jQuery(document).ready(function($) {
     });
 
     // Handle the "select all" checkbox for scan results
-    $(document).on('change', '#eid-select-all', function() {
-        $('#eid-import-form').find('input[name="media_items[]"]').prop('checked', this.checked);
+    $(document).on('change', '#emi-select-all', function() {
+        $('#emi-import-form').find('input[name="media_items[]"]').prop('checked', this.checked);
     });
 
     // Handle the "Import All" button
-    $(document).on('click', '#eid-import-all-button', function() {
-        var importForm = $('#eid-import-form');
+    $(document).on('click', '#emi-import-all-button', function() {
+        var importForm = $('#emi-import-form');
         // Select all checkboxes that are not disabled
         importForm.find('input[name="media_items[]"]:not(:disabled)').prop('checked', true);
         // Trigger the form submission
@@ -60,10 +60,10 @@ jQuery(document).ready(function($) {
     });
 
     // Handle the import form submission
-    $(document).on('submit', '#eid-import-form', function(e) {
+    $(document).on('submit', '#emi-import-form', function(e) {
         e.preventDefault();
 
-        var importButton = $('#eid-import-button');
+        var importButton = $('#emi-import-button');
         var selectedItems = $('input[name="media_items[]"]:checked');
 
         if (selectedItems.length === 0) {
@@ -91,22 +91,22 @@ jQuery(document).ready(function($) {
             importButton.prop('disabled', false).text('Import Selected Media');
             alert('All selected items have been processed.');
             // Optionally, refresh the scan to show updated results
-            $('#eid-scan-form').submit();
+            $('#emi-scan-form').submit();
             return;
         }
 
         var item = queue.shift();
-        var row = $('#eid-row-' + item.row_id);
+        var row = $('#emi-row-' + item.row_id);
         var statusSpan = row.find('.status');
 
         statusSpan.text('Importing...').css('color', 'orange');
 
         $.ajax({
-            url: eid_ajax.ajax_url,
+            url: emi_ajax.ajax_url,
             type: 'POST',
             data: {
-                action: 'eid_import_media_item',
-                nonce: eid_ajax.nonce,
+                action: 'emi_import_media_item',
+                nonce: emi_ajax.nonce,
                 url: item.url,
                 post_id: item.post_id
             },

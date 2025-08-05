@@ -4,43 +4,43 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
-class EID_Admin {
+class EMI_Admin {
 
     public function __construct() {
         add_action( 'admin_menu', [ $this, 'add_plugin_page' ] );
         add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
 
         // AJAX handler for scanning content
-        add_action( 'wp_ajax_eid_scan_content', [ $this, 'ajax_scan_content' ] );
+        add_action( 'wp_ajax_emi_scan_content', [ $this, 'ajax_scan_content' ] );
 
         // Include scanner class
-        require_once EID_PLUGIN_PATH . 'includes/class-eid-scanner.php';
-        require_once EID_PLUGIN_PATH . 'includes/class-eid-importer.php';
+        require_once EMI_PLUGIN_PATH . 'includes/class-emi-scanner.php';
+        require_once EMI_PLUGIN_PATH . 'includes/class-emi-importer.php';
 
         // AJAX handler for importing a single media item
-        add_action( 'wp_ajax_eid_import_media_item', [ $this, 'ajax_import_media_item' ] );
+        add_action( 'wp_ajax_emi_import_media_item', [ $this, 'ajax_import_media_item' ] );
     }
 
     public function enqueue_scripts( $hook ) {
         // Only load on our plugin page
-        if ( 'toplevel_page_eid-scanner' !== $hook ) {
+        if ( 'toplevel_page_emi-scanner' !== $hook ) {
             return;
         }
 
         wp_enqueue_script(
-            'eid-admin-script',
-            plugin_dir_url( __FILE__ ) . 'js/eid-admin-scripts.js',
+            'emi-admin-script',
+            plugin_dir_url( __FILE__ ) . 'js/emi-admin-scripts.js',
             [ 'jquery' ],
             '1.0',
             true
         );
 
         wp_localize_script(
-            'eid-admin-script',
-            'eid_ajax',
+            'emi-admin-script',
+            'emi_ajax',
             [
                 'ajax_url' => admin_url( 'admin-ajax.php' ),
-                'nonce'    => wp_create_nonce( 'eid-ajax-nonce' ),
+                'nonce'    => wp_create_nonce( 'emi-ajax-nonce' ),
             ]
         );
     }
@@ -50,9 +50,9 @@ class EID_Admin {
             'Wordpress External Media Importer',
             'External Media',
             'manage_options',
-            'eid-scanner',
+            'emi-scanner',
             [ $this, 'create_admin_page' ],
-            'dashicons-download',
+            plugin_dir_url( __FILE__ ) . '../assets/external-media-importer.png',
             100
         );
     }
@@ -63,13 +63,13 @@ class EID_Admin {
             <h1>Wordpress External Media Importer</h1>
             <p>Select the content types you want to scan for external media.</p>
 
-            <form id="eid-scan-form">
+            <form id="emi-scan-form">
                 <table class="form-table">
                     <tbody>
                         <tr>
-                            <th scope="row"><label for="eid-file-extensions">File Extensions</label></th>
+                            <th scope="row"><label for="emi-file-extensions">File Extensions</label></th>
                             <td>
-                                <input type="text" id="eid-file-extensions" name="file_extensions" value="jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,ppt,pptx" class="regular-text">
+                                <input type="text" id="emi-file-extensions" name="file_extensions" value="jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,ppt,pptx" class="regular-text">
                                 <p class="description">Enter comma-separated file extensions to scan for.</p>
                             </td>
                         </tr>
@@ -88,11 +88,11 @@ class EID_Admin {
                     </tbody>
                 </table>
                 <p class="submit">
-                    <button type="submit" class="button button-primary" id="eid-scan-button">Scan Now</button>
+                    <button type="submit" class="button button-primary" id="emi-scan-button">Scan Now</button>
                 </p>
             </form>
 
-            <div id="eid-scan-results">
+            <div id="emi-scan-results">
                 <!-- Results will be loaded here via AJAX -->
             </div>
         </div>
@@ -113,7 +113,7 @@ class EID_Admin {
     }
 
     public function ajax_scan_content() {
-        check_ajax_referer( 'eid-ajax-nonce', 'nonce' );
+        check_ajax_referer( 'emi-ajax-nonce', 'nonce' );
 
         parse_str( $_POST['form_data'], $form_data );
 
@@ -139,7 +139,7 @@ class EID_Admin {
         $debug_info['extensions'] = $extensions_array;
         $debug_info['post_statuses'] = $post_statuses;
 
-        $found_media = EID_Scanner::find_external_media( $post_types, $extensions_array, $post_statuses, $debug_info );
+        $found_media = EMI_Scanner::find_external_media( $post_types, $extensions_array, $post_statuses, $debug_info );
 
         if ( empty( $found_media ) ) {
             wp_send_json_success( [ 
@@ -153,11 +153,11 @@ class EID_Admin {
         ?>
         <h2>Scan Results</h2>
         <p>Found <?php echo count( $found_media ); ?> external media items.</p>
-        <form id="eid-import-form">
+        <form id="emi-import-form">
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
-                        <th scope="col" class="check-column"><input type="checkbox" id="eid-select-all"></th>
+                        <th scope="col" class="check-column"><input type="checkbox" id="emi-select-all"></th>
                         <th scope="col" style="width: 50px;">Thumbnail</th>
                         <th scope="col">Media URL</th>
                         <th scope="col">Found in Post</th>
@@ -165,7 +165,7 @@ class EID_Admin {
                 </thead>
                 <tbody>
                     <?php foreach ( $found_media as $index => $media ) : ?>
-                        <tr id="eid-row-<?php echo $index; ?>">
+                        <tr id="emi-row-<?php echo $index; ?>">
                             <th scope="row" class="check-column">
                                 <input type="checkbox" name="media_items[]" value="<?php echo esc_attr( $media['url'] ); ?>" data-post-id="<?php echo esc_attr( $media['post_id'] ); ?>" data-row-id="<?php echo $index; ?>">
                             </th>
@@ -190,8 +190,8 @@ class EID_Admin {
                 </tbody>
             </table>
             <p class="submit">
-                <button type="submit" class="button button-primary" id="eid-import-button">Import Selected Media</button>
-                <button type="button" class="button" id="eid-import-all-button">Import All</button>
+                <button type="submit" class="button button-primary" id="emi-import-button">Import Selected Media</button>
+                <button type="button" class="button" id="emi-import-all-button">Import All</button>
             </p>
         </form>
         <?php
@@ -204,7 +204,7 @@ class EID_Admin {
     }
 
     public function ajax_import_media_item() {
-        check_ajax_referer( 'eid-ajax-nonce', 'nonce' );
+        check_ajax_referer( 'emi-ajax-nonce', 'nonce' );
 
         if ( ! isset( $_POST['url'] ) || ! isset( $_POST['post_id'] ) ) {
             wp_send_json_error( [ 'message' => 'Missing required data.' ] );
@@ -213,7 +213,7 @@ class EID_Admin {
         $url = esc_url_raw( $_POST['url'] );
         $post_id = absint( $_POST['post_id'] );
 
-        $attachment_id = EID_Importer::import_media( $url, $post_id );
+        $attachment_id = EMI_Importer::import_media( $url, $post_id );
 
         if ( is_wp_error( $attachment_id ) ) {
             wp_send_json_error( [ 'message' => 'Failed to import ' . $url . ': ' . $attachment_id->get_error_message() ] );
@@ -224,7 +224,7 @@ class EID_Admin {
             wp_send_json_error( [ 'message' => 'Failed to get new URL for attachment ' . $attachment_id ] );
         }
 
-        $replaced = EID_Importer::replace_url_in_content( $url, $new_url, $post_id );
+        $replaced = EMI_Importer::replace_url_in_content( $url, $new_url, $post_id );
 
         if ( ! $replaced ) {
              wp_send_json_success( [ 'message' => 'Imported ' . basename($url) . ', but the URL was not found in the post content to replace.' ] );
