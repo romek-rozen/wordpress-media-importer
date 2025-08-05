@@ -60,6 +60,23 @@ sequenceDiagram
     end
 ```
 
+## For Developers: Building the Plugin
+
+This project includes a build script to create a distributable `.zip` file of the plugin, excluding development files.
+
+**Requirements:**
+*   `bash` (standard on Linux/macOS)
+*   `zip`
+*   `rsync`
+
+**Usage:**
+
+From the root of the project directory, run:
+```bash
+./build.sh
+```
+This will create a file named `external-media-importer.zip` in the project root, which is ready for installation in WordPress.
+
 ## License
 
 This plugin is licensed under the GPLv2 or later. See the [LICENSE](LICENSE) file for more details.
