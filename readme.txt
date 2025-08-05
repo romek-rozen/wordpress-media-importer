@@ -24,7 +24,7 @@ This plugin helps automate the process of migrating external media to your local
 
 == Installation ==
 
-1.  Upload the `external-image-downloader` folder to the `/wp-content/plugins/` directory.
+1.  Upload the `external-media-downloader` folder to the `/wp-content/plugins/` directory.
 2.  Activate the plugin through the 'Plugins' menu in WordPress.
 3.  Go to the "External Media" page in your admin menu to start scanning.
 
