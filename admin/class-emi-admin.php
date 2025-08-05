@@ -118,11 +118,8 @@ class EMI_Admin {
         if ( ! isset( $_POST['form_data'] ) ) {
             wp_send_json_error( [ 'message' => 'Invalid form data.' ] );
         }
-        
-        // Sanitize form data directly from $_POST
-        $form_data_raw = isset($_POST['form_data']) ? sanitize_text_field(wp_unslash($_POST['form_data'])) : '';
-        $form_data = [];
-        parse_str( $form_data_raw, $form_data );
+
+        $form_data = $_POST['form_data'];
 
         if ( empty( $form_data['post_types'] ) || ! is_array( $form_data['post_types'] ) ) {
             wp_send_json_error( [ 'message' => 'Please select at least one content type to scan.' ] );

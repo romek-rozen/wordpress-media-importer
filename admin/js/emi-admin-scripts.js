@@ -4,7 +4,12 @@ jQuery(document).ready(function($) {
 
         var scanButton = $('#emi-scan-button');
         var resultsContainer = $('#emi-scan-results');
-        var formData = $(this).serialize();
+        
+        var formData = {
+            'file_extensions': $('#emi-file-extensions').val(),
+            'post_types': $('input[name="post_types[]"]:checked').map(function() { return this.value; }).get(),
+            'post_statuses': $('input[name="post_statuses[]"]:checked').map(function() { return this.value; }).get()
+        };
 
         scanButton.prop('disabled', true).text('Scanning...');
         resultsContainer.html('<p>Scanning, please wait...</p>');
