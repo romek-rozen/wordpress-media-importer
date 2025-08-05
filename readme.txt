@@ -1,5 +1,5 @@
 === Wordpress External Media Importer ===
-Contributors: Roman Rozenberger & Cline
+Contributors: romanrozen
 Tags: images, import, external, download, media
 Requires at least: 5.0
 Tested up to: 6.5

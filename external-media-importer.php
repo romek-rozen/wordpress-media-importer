@@ -4,6 +4,7 @@
  * Description: Scans posts for external media and imports them into the media library.
  * Version: 1.0
  * Author: Roman Rozenberger & Cline
+ * Author URI: https://rozenberger.com/
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
