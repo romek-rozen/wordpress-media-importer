@@ -52,7 +52,7 @@ class EMI_Admin {
             'manage_options',
             'emi-scanner',
             [ $this, 'create_admin_page' ],
-            plugin_dir_url( __FILE__ ) . '../assets/external-media-importer.png',
+            plugin_dir_url( __FILE__ ) . '../assets/icon-256x256.png',
             100
         );
     }

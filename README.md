@@ -58,3 +58,8 @@ sequenceDiagram
         Server-->>Browser: 15. Returns JSON response (success/error)
         Browser->>User: 16. Updates status in the table (e.g., "Imported")
     end
+```
+
+## License
+
+This plugin is licensed under the GPLv2 or later. See the [LICENSE](LICENSE) file for more details.
