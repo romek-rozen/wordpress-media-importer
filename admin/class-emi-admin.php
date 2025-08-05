@@ -119,22 +119,22 @@ class EMI_Admin {
             wp_send_json_error( [ 'message' => 'Invalid form data.' ] );
         }
         
-        $form_data_raw = wp_unslash( $_POST['form_data'] );
-        parse_str( $form_data_raw, $form_data );
+        // Sanitize form data directly from $_POST
+        $form_data = [];
+        parse_str( wp_unslash( $_POST['form_data'] ), $form_data );
 
-        if ( empty( $form_data['post_types'] ) ) {
+        if ( empty( $form_data['post_types'] ) || ! is_array( $form_data['post_types'] ) ) {
             wp_send_json_error( [ 'message' => 'Please select at least one content type to scan.' ] );
         }
-
         $post_types = array_map( 'sanitize_text_field', $form_data['post_types'] );
-        
+
         $extensions = 'jpg,jpeg,png,gif,webp,pdf'; // Default extensions
         if ( ! empty( $form_data['file_extensions'] ) ) {
             $extensions = sanitize_text_field( $form_data['file_extensions'] );
         }
         $extensions_array = array_map('trim', explode(',', $extensions));
 
-        if ( empty( $form_data['post_statuses'] ) ) {
+        if ( empty( $form_data['post_statuses'] ) || ! is_array( $form_data['post_statuses'] ) ) {
             wp_send_json_error( [ 'message' => 'Please select at least one post status to scan.' ] );
         }
         $post_statuses = array_map( 'sanitize_text_field', $form_data['post_statuses'] );
