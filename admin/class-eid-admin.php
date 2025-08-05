@@ -1,0 +1,222 @@
+<?php
+
+if ( ! defined( 'ABSPATH' ) ) {
+    exit; // Exit if accessed directly.
+}
+
+class EID_Admin {
+
+    public function __construct() {
+        add_action( 'admin_menu', [ $this, 'add_plugin_page' ] );
+        add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_scripts' ] );
+
+        // AJAX handler for scanning content
+        add_action( 'wp_ajax_eid_scan_content', [ $this, 'ajax_scan_content' ] );
+
+        // Include scanner class
+        require_once EID_PLUGIN_PATH . 'includes/class-eid-scanner.php';
+        require_once EID_PLUGIN_PATH . 'includes/class-eid-importer.php';
+
+        // AJAX handler for importing a single media item
+        add_action( 'wp_ajax_eid_import_media_item', [ $this, 'ajax_import_media_item' ] );
+    }
+
+    public function enqueue_scripts( $hook ) {
+        // Only load on our plugin page
+        if ( 'toplevel_page_eid-scanner' !== $hook ) {
+            return;
+        }
+
+        wp_enqueue_script(
+            'eid-admin-script',
+            plugin_dir_url( __FILE__ ) . 'js/eid-admin-scripts.js',
+            [ 'jquery' ],
+            '1.0',
+            true
+        );
+
+        wp_localize_script(
+            'eid-admin-script',
+            'eid_ajax',
+            [
+                'ajax_url' => admin_url( 'admin-ajax.php' ),
+                'nonce'    => wp_create_nonce( 'eid-ajax-nonce' ),
+            ]
+        );
+    }
+
+    public function add_plugin_page() {
+        add_menu_page(
+            'Wordpress External Media Importer',
+            'External Media',
+            'manage_options',
+            'eid-scanner',
+            [ $this, 'create_admin_page' ],
+            'dashicons-download',
+            100
+        );
+    }
+
+    public function create_admin_page() {
+        ?>
+        <div class="wrap">
+            <h1>Wordpress External Media Importer</h1>
+            <p>Select the content types you want to scan for external media.</p>
+
+            <form id="eid-scan-form">
+                <table class="form-table">
+                    <tbody>
+                        <tr>
+                            <th scope="row"><label for="eid-file-extensions">File Extensions</label></th>
+                            <td>
+                                <input type="text" id="eid-file-extensions" name="file_extensions" value="jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx,ppt,pptx" class="regular-text">
+                                <p class="description">Enter comma-separated file extensions to scan for.</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Content Types</th>
+                            <td>
+                                <?php $this->render_post_types_checkboxes(); ?>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="submit">
+                    <button type="submit" class="button button-primary" id="eid-scan-button">Scan Now</button>
+                </p>
+            </form>
+
+            <div id="eid-scan-results">
+                <!-- Results will be loaded here via AJAX -->
+            </div>
+        </div>
+        <?php
+    }
+
+    private function render_post_types_checkboxes() {
+        $post_types = get_post_types( [ 'public' => true ], 'objects' );
+        foreach ( $post_types as $post_type ) {
+            if ( $post_type->name === 'attachment' ) {
+                continue;
+            }
+            echo '<label style="margin-right: 15px;">';
+            echo '<input type="checkbox" name="post_types[]" value="' . esc_attr( $post_type->name ) . '" checked="checked"> ';
+            echo esc_html( $post_type->label );
+            echo '</label><br>';
+        }
+    }
+
+    public function ajax_scan_content() {
+        check_ajax_referer( 'eid-ajax-nonce', 'nonce' );
+
+        parse_str( $_POST['form_data'], $form_data );
+
+        if ( empty( $form_data['post_types'] ) ) {
+            wp_send_json_error( [ 'message' => 'Please select at least one content type to scan.' ] );
+        }
+
+        $post_types = array_map( 'sanitize_text_field', $form_data['post_types'] );
+        
+        $extensions = 'jpg,jpeg,png,gif,webp,pdf'; // Default extensions
+        if ( ! empty( $form_data['file_extensions'] ) ) {
+            $extensions = sanitize_text_field( $form_data['file_extensions'] );
+        }
+        $extensions_array = array_map('trim', explode(',', $extensions));
+
+        $debug_info = [];
+        $debug_info['post_types'] = $post_types;
+        $debug_info['extensions'] = $extensions_array;
+
+        $found_media = EID_Scanner::find_external_media( $post_types, $extensions_array, $debug_info );
+
+        if ( empty( $found_media ) ) {
+            wp_send_json_success( [ 
+                'html' => '<p>No external media found.</p>',
+                'debug' => $debug_info
+            ] );
+        }
+
+        // Build HTML response
+        ob_start();
+        ?>
+        <h2>Scan Results</h2>
+        <p>Found <?php echo count( $found_media ); ?> external media items.</p>
+        <form id="eid-import-form">
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th scope="col" class="check-column"><input type="checkbox" id="eid-select-all"></th>
+                        <th scope="col" style="width: 50px;">Thumbnail</th>
+                        <th scope="col">Media URL</th>
+                        <th scope="col">Found in Post</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ( $found_media as $index => $media ) : ?>
+                        <tr id="eid-row-<?php echo $index; ?>">
+                            <th scope="row" class="check-column">
+                                <input type="checkbox" name="media_items[]" value="<?php echo esc_attr( $media['url'] ); ?>" data-post-id="<?php echo esc_attr( $media['post_id'] ); ?>" data-row-id="<?php echo $index; ?>">
+                            </th>
+                            <td>
+                                <?php
+                                $image_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                                $file_extension = pathinfo( $media['url'], PATHINFO_EXTENSION );
+                                if ( in_array( strtolower( $file_extension ), $image_extensions ) ) {
+                                    echo '<img src="' . esc_url( $media['url'] ) . '" style="width: 50px; height: 50px; object-fit: cover;">';
+                                }
+                                ?>
+                            </td>
+                            <td>
+                                <a href="<?php echo esc_url( $media['url'] ); ?>" target="_blank"><?php echo esc_html( basename( $media['url'] ) ); ?></a>
+                                <div class="row-actions">
+                                    <span class="status"></span>
+                                </div>
+                            </td>
+                            <td><a href="<?php echo get_edit_post_link( $media['post_id'] ); ?>" target="_blank"><?php echo esc_html( $media['post_title'] ); ?></a></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <p class="submit">
+                <button type="submit" class="button button-primary" id="eid-import-button">Import Selected Media</button>
+            </p>
+        </form>
+        <?php
+        $html = ob_get_clean();
+
+        wp_send_json_success( [ 
+            'html' => $html,
+            'debug' => $debug_info
+        ] );
+    }
+
+    public function ajax_import_media_item() {
+        check_ajax_referer( 'eid-ajax-nonce', 'nonce' );
+
+        if ( ! isset( $_POST['url'] ) || ! isset( $_POST['post_id'] ) ) {
+            wp_send_json_error( [ 'message' => 'Missing required data.' ] );
+        }
+
+        $url = esc_url_raw( $_POST['url'] );
+        $post_id = absint( $_POST['post_id'] );
+
+        $attachment_id = EID_Importer::import_media( $url, $post_id );
+
+        if ( is_wp_error( $attachment_id ) ) {
+            wp_send_json_error( [ 'message' => 'Failed to import ' . $url . ': ' . $attachment_id->get_error_message() ] );
+        }
+
+        $new_url = wp_get_attachment_url( $attachment_id );
+        if ( ! $new_url ) {
+            wp_send_json_error( [ 'message' => 'Failed to get new URL for attachment ' . $attachment_id ] );
+        }
+
+        $replaced = EID_Importer::replace_url_in_content( $url, $new_url, $post_id );
+
+        if ( ! $replaced ) {
+             wp_send_json_success( [ 'message' => 'Imported ' . basename($url) . ', but the URL was not found in the post content to replace.' ] );
+        }
+
+        wp_send_json_success( [ 'message' => 'Successfully imported and replaced ' . basename($url) . '.' ] );
+    }
+}
