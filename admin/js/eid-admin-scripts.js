@@ -50,6 +50,15 @@ jQuery(document).ready(function($) {
         $('#eid-import-form').find('input[name="media_items[]"]').prop('checked', this.checked);
     });
 
+    // Handle the "Import All" button
+    $(document).on('click', '#eid-import-all-button', function() {
+        var importForm = $('#eid-import-form');
+        // Select all checkboxes that are not disabled
+        importForm.find('input[name="media_items[]"]:not(:disabled)').prop('checked', true);
+        // Trigger the form submission
+        importForm.submit();
+    });
+
     // Handle the import form submission
     $(document).on('submit', '#eid-import-form', function(e) {
         e.preventDefault();

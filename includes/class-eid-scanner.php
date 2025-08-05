@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class EID_Scanner {
 
-    public static function find_external_media( $post_types, $extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'], &$debug_info = [] ) {
+    public static function find_external_media( $post_types, $extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'], $post_statuses = ['publish'], &$debug_info = [] ) {
         $found_media = [];
         $debug_info['scanner_log'] = [];
 
@@ -21,7 +21,7 @@ class EID_Scanner {
         $args = [
             'post_type'      => $post_types,
             'posts_per_page' => -1,
-            'post_status'    => ['publish', 'draft', 'pending', 'future'],
+            'post_status'    => $post_statuses,
         ];
 
         $query = new WP_Query( $args );

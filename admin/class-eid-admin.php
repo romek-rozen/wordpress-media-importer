@@ -79,6 +79,12 @@ class EID_Admin {
                                 <?php $this->render_post_types_checkboxes(); ?>
                             </td>
                         </tr>
+                        <tr>
+                            <th scope="row">Post Statuses</th>
+                            <td>
+                                <?php $this->render_post_status_checkboxes(); ?>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
                 <p class="submit">
@@ -123,11 +129,17 @@ class EID_Admin {
         }
         $extensions_array = array_map('trim', explode(',', $extensions));
 
+        if ( empty( $form_data['post_statuses'] ) ) {
+            wp_send_json_error( [ 'message' => 'Please select at least one post status to scan.' ] );
+        }
+        $post_statuses = array_map( 'sanitize_text_field', $form_data['post_statuses'] );
+
         $debug_info = [];
         $debug_info['post_types'] = $post_types;
         $debug_info['extensions'] = $extensions_array;
+        $debug_info['post_statuses'] = $post_statuses;
 
-        $found_media = EID_Scanner::find_external_media( $post_types, $extensions_array, $debug_info );
+        $found_media = EID_Scanner::find_external_media( $post_types, $extensions_array, $post_statuses, $debug_info );
 
         if ( empty( $found_media ) ) {
             wp_send_json_success( [ 
@@ -179,6 +191,7 @@ class EID_Admin {
             </table>
             <p class="submit">
                 <button type="submit" class="button button-primary" id="eid-import-button">Import Selected Media</button>
+                <button type="button" class="button" id="eid-import-all-button">Import All</button>
             </p>
         </form>
         <?php
@@ -218,5 +231,19 @@ class EID_Admin {
         }
 
         wp_send_json_success( [ 'message' => 'Successfully imported and replaced ' . basename($url) . '.' ] );
+    }
+
+    private function render_post_status_checkboxes() {
+        $stati = get_post_stati( ['public' => true, 'show_in_admin_status_list' => true], 'objects' );
+        $stati['draft'] = get_post_status_object('draft');
+        $stati['future'] = get_post_status_object('future');
+        $stati['pending'] = get_post_status_object('pending');
+
+        foreach ( $stati as $status ) {
+            echo '<label style="margin-right: 15px;">';
+            echo '<input type="checkbox" name="post_statuses[]" value="' . esc_attr( $status->name ) . '" checked="checked"> ';
+            echo esc_html( $status->label );
+            echo '</label><br>';
+        }
     }
 }
