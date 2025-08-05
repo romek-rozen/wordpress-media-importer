@@ -47,7 +47,7 @@ class EMI_Admin {
 
     public function add_plugin_page() {
         add_menu_page(
-            'Wordpress External Media Importer',
+            'External Media Importer',
             'External Media',
             'manage_options',
             'emi-scanner',
@@ -60,7 +60,7 @@ class EMI_Admin {
     public function create_admin_page() {
         ?>
         <div class="wrap">
-            <h1>Wordpress External Media Importer</h1>
+            <h1>External Media Importer</h1>
             <p>Select the content types you want to scan for external media.</p>
 
             <form id="emi-scan-form">
@@ -115,7 +115,12 @@ class EMI_Admin {
     public function ajax_scan_content() {
         check_ajax_referer( 'emi-ajax-nonce', 'nonce' );
 
-        parse_str( $_POST['form_data'], $form_data );
+        if ( ! isset( $_POST['form_data'] ) ) {
+            wp_send_json_error( [ 'message' => 'Invalid form data.' ] );
+        }
+        
+        $form_data_raw = wp_unslash( $_POST['form_data'] );
+        parse_str( $form_data_raw, $form_data );
 
         if ( empty( $form_data['post_types'] ) ) {
             wp_send_json_error( [ 'message' => 'Please select at least one content type to scan.' ] );
@@ -165,9 +170,9 @@ class EMI_Admin {
                 </thead>
                 <tbody>
                     <?php foreach ( $found_media as $index => $media ) : ?>
-                        <tr id="emi-row-<?php echo $index; ?>">
+                        <tr id="emi-row-<?php echo esc_attr( $index ); ?>">
                             <th scope="row" class="check-column">
-                                <input type="checkbox" name="media_items[]" value="<?php echo esc_attr( $media['url'] ); ?>" data-post-id="<?php echo esc_attr( $media['post_id'] ); ?>" data-row-id="<?php echo $index; ?>">
+                                <input type="checkbox" name="media_items[]" value="<?php echo esc_attr( $media['url'] ); ?>" data-post-id="<?php echo esc_attr( $media['post_id'] ); ?>" data-row-id="<?php echo esc_attr( $index ); ?>">
                             </th>
                             <td>
                                 <?php
@@ -184,7 +189,7 @@ class EMI_Admin {
                                     <span class="status"></span>
                                 </div>
                             </td>
-                            <td><a href="<?php echo get_edit_post_link( $media['post_id'] ); ?>" target="_blank"><?php echo esc_html( $media['post_title'] ); ?></a></td>
+                            <td><a href="<?php echo esc_url( get_edit_post_link( $media['post_id'] ) ); ?>" target="_blank"><?php echo esc_html( $media['post_title'] ); ?></a></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -210,8 +215,8 @@ class EMI_Admin {
             wp_send_json_error( [ 'message' => 'Missing required data.' ] );
         }
 
-        $url = esc_url_raw( $_POST['url'] );
-        $post_id = absint( $_POST['post_id'] );
+        $url = esc_url_raw( wp_unslash( $_POST['url'] ) );
+        $post_id = absint( wp_unslash( $_POST['post_id'] ) );
 
         $attachment_id = EMI_Importer::import_media( $url, $post_id );
 

@@ -29,7 +29,7 @@ class EMI_Importer {
         }
 
         // For other file types, use a more manual approach
-        $file_name = basename( parse_url( $url, PHP_URL_PATH ) );
+        $file_name = basename( wp_parse_url( $url, PHP_URL_PATH ) );
         
         // Download file to temp folder
         $tmp_file = download_url( $url, 30 ); // 30 second timeout
@@ -46,7 +46,7 @@ class EMI_Importer {
         $attachment_id = media_handle_sideload( $file, $post_id );
 
         // Clean up temp file
-        @unlink( $tmp_file );
+        wp_delete_file( $tmp_file );
 
         return $attachment_id;
     }

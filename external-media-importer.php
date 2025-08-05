@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Wordpress External Media Importer
+ * Plugin Name: External Media Importer
  * Description: Scans posts for external media and imports them into the media library.
  * Version: 1.0
  * Author: Roman Rozenberger & Cline

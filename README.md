@@ -1,4 +1,4 @@
-# Wordpress External Media Importer
+# External Media Importer
 
 **Authors:** Roman Rozenberger & Cline
 **Version:** 1.0
