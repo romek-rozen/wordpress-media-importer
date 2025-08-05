@@ -24,3 +24,6 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# My Files
+/WORDPRESS_DEVELOPER.md
